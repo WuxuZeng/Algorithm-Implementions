@@ -4,7 +4,7 @@ author: S.Eskandari M.M.Javidi
 https://doi.org/10.1016/j.ijar.2015.11.006
 """
 
-from rough_set import *
+from RoughSet.traditional_rough_set import *
 import math
 import copy
 import random
@@ -168,7 +168,8 @@ class NoiseResistantDependencyMeasure:
             return 1 - impurity
 
     @staticmethod
-    def proximity_of_boundary_region_to_positive_region_based_portion(universe, sample_subset, feature_subset):
+    def proximity_of_boundary_region_to_positive_region_based_portion(
+            universe, sample_subset, feature_subset, partition_function=partition):
         """
         a noise measure function
         to describe the information contain by the boundary of partition(universe, sample_subset)
@@ -177,7 +178,7 @@ class NoiseResistantDependencyMeasure:
         :param feature_subset: list, a set of features' serial number
         :return: float, the proximity
         """
-        partition_1 = partition(universe, feature_subset)
+        partition_1 = partition_function(universe, feature_subset)
         total = 0
         for elementary_set in partition_1:
             related_information = NoiseResistantDependencyMeasure.related_information_of_subset_b(
@@ -187,14 +188,15 @@ class NoiseResistantDependencyMeasure:
         return total / (len(partition_1))
 
     @staticmethod
-    def noisy_dependency_of_feature_subset_d_on_feature_subset_c(universe, feature_subset_c, feature_subset_d):
+    def noisy_dependency_of_feature_subset_d_on_feature_subset_c(
+            universe, feature_subset_c, feature_subset_d, partition_function=partition):
         """
         :param universe: the universe of objects(feature vector/sample/instance)
         :param feature_subset_c: list, a set of features' serial number
         :param feature_subset_d: list, a set of features' serial number
         :return: noisy dependency of feature subset a on feature subset b
         """
-        partition_d = partition(universe, feature_subset_d)
+        partition_d = partition_function(universe, feature_subset_d)
         total_dependency = 0
         for p in partition_d:
             the_dependency = NoiseResistantDependencyMeasure. \
@@ -317,7 +319,7 @@ class NoiseResistantAssistedQuickReduct:
         :return: candidate_features
         """
         destination_dependency = dependency(universe, raw_conditional_features, decision_features)
-        contitional_features = copy.deepcopy(raw_conditional_features)
+        conditional_features = copy.deepcopy(raw_conditional_features)
         candidate_features = []
         candidate_dependency = 0
         # the dependency is monotonic with positive,
@@ -330,22 +332,22 @@ class NoiseResistantAssistedQuickReduct:
             test_features = copy.deepcopy(candidate_features)
             count1 = 0
             index = 0
-            for i in range(len(contitional_features)):
+            for i in range(len(conditional_features)):
                 count1 += 1
                 if count1 % 1000 == 0:
                     print(count1, end="-")
-                test_features.append(contitional_features[i])
+                test_features.append(conditional_features[i])
                 result = NoiseResistantDependencyMeasure.noise_resistant_evaluation_measure(
                     universe, test_features, [decision_features]) - \
                          NoiseResistantDependencyMeasure.noise_resistant_evaluation_measure(
                              universe, candidate_features, [decision_features])
-                test_features.remove(contitional_features[i])
+                test_features.remove(conditional_features[i])
                 if result > noise_resistant_increase:
                     noise_resistant_increase = result
                     index = i
-            feature = contitional_features[index]
+            feature = conditional_features[index]
             candidate_features.append(feature)
-            contitional_features.remove(feature)
+            conditional_features.remove(feature)
             candidate_dependency = dependency(universe, candidate_features, [decision_features])
         return candidate_features
 
@@ -402,7 +404,7 @@ class OnlineStreamingNoiseResistantAidedRoughSetAttributeRecutionSignificanceAna
     def heuristic_non_significant(universe, raw_candidate_features, decision_features, feature):
         """
         non_significance in candidate_features + feature due to the feature
-        :param universe:
+        :param universe: the universe of objects(feature vector/sample/instance)
         :param raw_candidate_features:
         :param decision_features:
         :param feature:
@@ -430,7 +432,7 @@ class OnlineStreamingNoiseResistantAidedRoughSetAttributeRecutionSignificanceAna
                                                         feature):
         """
         non_significance in candidate_features + feature due to the feature
-        :param universe:
+        :param universe: the universe of objects(feature vector/sample/instance)
         :param raw_candidate_features:
         :param decision_features:
         :param feature:
@@ -574,7 +576,6 @@ def online_streaming_noise_resistant_assistant_aided_rough_set_attribute_reducti
 def main():
     quick_reduction_test()
     noise_resistant_assisted_quick_reduction_test()
-
     online_streaming_noise_resistant_assistant_aided_rough_set_attribute_reduction_using_significance_analysis_test()
     NoiseResistantDependencyMeasureTest.mean_positive_region_test()
     NoiseResistantDependencyMeasureTest. \

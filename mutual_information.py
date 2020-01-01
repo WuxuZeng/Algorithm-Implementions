@@ -5,7 +5,7 @@ conditional mutual information(partial mutual information)
 """
 
 
-from rough_set import *
+from RoughSet.traditional_rough_set import *
 import math
 
 

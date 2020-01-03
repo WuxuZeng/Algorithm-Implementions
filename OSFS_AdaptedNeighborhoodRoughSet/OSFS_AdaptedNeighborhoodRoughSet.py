@@ -12,38 +12,9 @@ https://doi.org/10.1109/ICBK.2017.41
 import copy
 import heapq
 import random
-from RoughSet.traditional_rough_set import *
+from RoughSet.neighbourhood_rough_set import *
 from tools import *
 from itertools import combinations
-
-
-def generate_delta_neighborhood_test():
-    data = pd.read_csv("ExampleData.csv", header=None)
-    del data[4]
-    result = generate_delta_neighborhood(np.array(data), [0, 1, 2, 3], 33, euclidean_distance)
-    print("result:", result)
-    # result: [[0], [1, 4], [2, 3, 6], [5, 7]]
-    return
-
-
-# for continuous data
-def generate_distance_matrix(universe, attributes, distance, display_distance=False):
-    """
-    generate the distance triangle matrix
-    :param universe: the universe of objects(feature vector/sample/instance)
-    :param attributes: features' index
-    :param distance: the method to calculate the distance
-    :param display_distance: default is Fault ,if is True, the distance will display
-    :return: the distance triangle matrix
-    """
-    matrix = np.triu(np.zeros(len(universe)**2).reshape(len(universe), len(universe)))
-    for i in range(len(universe)):
-        for j in range(i, len(universe)):
-            matrix[i][j] = distance(universe, i, j, attributes)
-    matrix += matrix.T - np.diag(matrix.diagonal())
-    if display_distance:
-        print(matrix)
-    return matrix
 
 
 # for continuous data
@@ -77,12 +48,12 @@ def generate_k_nearest_neighborhood(universe, attributes, k, distance, display_d
     distance = generate_distance_matrix(universe, attributes, distance, display_distance)
     universe_index = list(np.arange(universe.shape[0]))
     elementary_sets = []  # R-elementary sets
-    i = 0
-    while i < len(universe_index):
+    j = 0
+    while j < len(universe_index):
         k_nearest_index = \
-            heapq.nsmallest(k + 1, range(len(distance[universe_index[i]])), distance[universe_index[i]].take)
+            heapq.nsmallest(k + 1, range(len(distance[universe_index[j]])), distance[universe_index[j]].take)
         elementary_sets.append(k_nearest_index)
-        i += 1
+        j += 1
     return elementary_sets
 
 
@@ -109,15 +80,15 @@ def generate_gap_neighborhood(
     distance_matrix = generate_distance_matrix(universe, attributes, distance, display_distance)
     universe_index = list(np.arange(universe.shape[0]))
     elementary_sets = []  # R-elementary sets
-    i = 0
-    while i < len(universe_index):
+    j = 0
+    while j < len(universe_index):
         # get the sorted distance of index
-        distance_sort = heapq.nsmallest(universe.shape[0], range(len(distance_matrix[universe_index[i]])),
-                                        distance_matrix[universe_index[i]].take)
+        distance_sort = heapq.nsmallest(universe.shape[0], range(len(distance_matrix[universe_index[j]])),
+                                        distance_matrix[universe_index[j]].take)
 
         # calculate the max, min, and mean of the distance
-        distance_max = distance_matrix[universe_index[i]][distance_sort[-1]]
-        distance_min = distance_matrix[universe_index[i]][distance_sort[1]]
+        distance_max = distance_matrix[universe_index[j]][distance_sort[-1]]
+        distance_min = distance_matrix[universe_index[j]][distance_sort[1]]
         # the formulate in the paper is G_mean = (D_max-D_min)/(n-1)
         # the source code imply with Matlab by the author is G_mean = (D_max-D_min)/(n-2)
         distance_mean = (distance_max - distance_min) / (universe.shape[0] - 1)
@@ -126,21 +97,21 @@ def generate_gap_neighborhood(
 
         # find the gap
         while j < len(distance_sort):
-            if distance_matrix[universe_index[i]][distance_sort[j]] - \
-                    distance_matrix[universe_index[i]][distance_sort[j - 1]] >= gap:
+            if distance_matrix[universe_index[j]][distance_sort[j]] - \
+                    distance_matrix[universe_index[j]][distance_sort[j - 1]] >= gap:
                 break
             j += 1
 
         # put the xi to the front
-        index = distance_sort.index(i)
+        index = distance_sort.index(j)
         if index != 0:
-            distance_sort.remove(i)
+            distance_sort.remove(j)
             distance_sort.insert(index, distance_sort[0])
             distance_sort.remove(distance_sort[0])
-            distance_sort.insert(0, i)
+            distance_sort.insert(0, j)
 
         elementary_sets.append(distance_sort[:j])
-        i += 1
+        j += 1
 
     return elementary_sets
 
@@ -187,14 +158,14 @@ class OnlineFeatureSelectionAdapted3Max:
         #     for single_partition in partitions:
         #         if element_is_include(gap_neighborhood[0], single_partition):
         #             s_card += \
-        #                 (len([i for i in gap_neighborhood if i in single_partition])-1) / (len(gap_neighborhood)-1)
+        #                 (len([j for j in gap_neighborhood if j in single_partition])-1) / (len(gap_neighborhood)-1)
         # d_s = s_card / self.universe.shape[0]
 
         # for gap_neighborhood in gap_neighborhoods:
         #     for single_partition in partitions:
         #         if element_is_include(gap_neighborhood[0], single_partition):
         #             s_card += \
-        #                 (len([i for i in gap_neighborhood if i in single_partition])-1) / (len(gap_neighborhood)-1)
+        #                 (len([j for j in gap_neighborhood if j in single_partition])-1) / (len(gap_neighborhood)-1)
         # d_s = s_card / len(attributes)
 
         # 样本本身包含进邻域,s_card计算的是相似度，同样本标签一致的对象为positive sample
@@ -205,61 +176,61 @@ class OnlineFeatureSelectionAdapted3Max:
             for single_partition in partitions:
                 if element_is_include(gap_neighborhood[0], single_partition):
                     s_card += \
-                        (len([i for i in gap_neighborhood if i in single_partition]) - 1) / (len(gap_neighborhood))
+                        (len([j for j in gap_neighborhood if j in single_partition]) - 1) / (len(gap_neighborhood))
         d_s = s_card / self.universe.shape[0]
 
         # for gap_neighborhood in gap_neighborhoods:
         #     for single_partition in partitions:
         #         if element_is_include(gap_neighborhood[0], single_partition):
         #             s_card += \
-        #                 (len([i for i in gap_neighborhood if i in single_partition])) / (len(gap_neighborhood))
+        #                 (len([j for j in gap_neighborhood if j in single_partition])) / (len(gap_neighborhood))
         # d_s = s_card / len(attributes)
 
         # 样本本身包含进邻域,s_card计算的是相似度，标签为1的对象为positive sample
         # result: [0, 2]
         # for gap_neighborhood in gap_neighborhoods:
         #     if element_is_include(gap_neighborhood[0], partitions[1]):
-        #         s_card += (len([i for i in gap_neighborhood if i in partitions[1]]) - 1) / (len(gap_neighborhood) - 1)
+        #         s_card += (len([j for j in gap_neighborhood if j in partitions[1]]) - 1) / (len(gap_neighborhood) - 1)
         #     if element_is_include(gap_neighborhood[0], partitions[0]):
-        #         s_card += (len([i for i in gap_neighborhood if i in partitions[1]])) / (len(gap_neighborhood) - 1)
+        #         s_card += (len([j for j in gap_neighborhood if j in partitions[1]])) / (len(gap_neighborhood) - 1)
         # d_s = s_card / self.universe.shape[0]
 
         # for gap_neighborhood in gap_neighborhoods:
         #     if element_is_include(gap_neighborhood[0], partitions[1]):
-        #         s_card += (len([i for i in gap_neighborhood if i in partitions[1]]) - 1) / (len(gap_neighborhood) - 1)
+        #         s_card += (len([j for j in gap_neighborhood if j in partitions[1]]) - 1) / (len(gap_neighborhood) - 1)
         #     if element_is_include(gap_neighborhood[0], partitions[0]):
-        #         s_card += (len([i for i in gap_neighborhood if i in partitions[1]])) / (len(gap_neighborhood) - 1)
+        #         s_card += (len([j for j in gap_neighborhood if j in partitions[1]])) / (len(gap_neighborhood) - 1)
         # d_s = s_card / len(attributes)
 
         # 样本本身不包含进邻域,s_card计算的是相似度，标签为1的对象为positive sample
         # result: [0, 3]
         # for gap_neighborhood in gap_neighborhoods:
         #     if element_is_include(gap_neighborhood[0], partitions[1]):
-        #         s_card += (len([i for i in gap_neighborhood if i in partitions[1]])) / (len(gap_neighborhood))
+        #         s_card += (len([j for j in gap_neighborhood if j in partitions[1]])) / (len(gap_neighborhood))
         #     if element_is_include(gap_neighborhood[0], partitions[0]):
-        #         s_card += (len([i for i in gap_neighborhood if i in partitions[0]])) / (len(gap_neighborhood))
+        #         s_card += (len([j for j in gap_neighborhood if j in partitions[0]])) / (len(gap_neighborhood))
         # d_s = s_card / self.universe.shape[0]
 
         # for gap_neighborhood in gap_neighborhoods:
         #     if element_is_include(gap_neighborhood[0], partitions[1]):
-        #         s_card += (len([i for i in gap_neighborhood if i in partitions[1]])) / (len(gap_neighborhood))
+        #         s_card += (len([j for j in gap_neighborhood if j in partitions[1]])) / (len(gap_neighborhood))
         #     if element_is_include(gap_neighborhood[0], partitions[0]):
-        #         s_card += (len([i for i in gap_neighborhood if i in partitions[0]])) / (len(gap_neighborhood))
+        #         s_card += (len([j for j in gap_neighborhood if j in partitions[0]])) / (len(gap_neighborhood))
         # d_s = s_card / len(attributes)
 
         # result: [0, 3]
         # for gap_neighborhood in gap_neighborhoods:
         #     if element_is_include(gap_neighborhood[0], partitions[1]):
-        #         s_card += (len([i for i in gap_neighborhood if i in partitions[1]]) - 1) / (len(gap_neighborhood) - 1)
+        #         s_card += (len([j for j in gap_neighborhood if j in partitions[1]]) - 1) / (len(gap_neighborhood) - 1)
         #     if element_is_include(gap_neighborhood[0], partitions[0]):
-        #         s_card += (len([i for i in gap_neighborhood if i in partitions[0]]) - 1) / (len(gap_neighborhood) - 1)
+        #         s_card += (len([j for j in gap_neighborhood if j in partitions[0]]) - 1) / (len(gap_neighborhood) - 1)
         # d_s = s_card / self.universe.shape[0]
 
         # for gap_neighborhood in gap_neighborhoods:
         #     if element_is_include(gap_neighborhood[0], partitions[1]):
-        #         s_card += (len([i for i in gap_neighborhood if i in partitions[1]]) - 1) / (len(gap_neighborhood) - 1)
+        #         s_card += (len([j for j in gap_neighborhood if j in partitions[1]]) - 1) / (len(gap_neighborhood) - 1)
         #     if element_is_include(gap_neighborhood[0], partitions[0]):
-        #         s_card += (len([i for i in gap_neighborhood if i in partitions[0]]) - 1) / (len(gap_neighborhood) - 1)
+        #         s_card += (len([j for j in gap_neighborhood if j in partitions[0]]) - 1) / (len(gap_neighborhood) - 1)
         # d_s = s_card / len(attributes)
 
         return d_s
@@ -270,8 +241,8 @@ class OnlineFeatureSelectionAdapted3Max:
         :return: None
         """
         conditional_features = self.conditional_features
-        for i in range(len(conditional_features)):
-            yield conditional_features[i]
+        for j in range(len(conditional_features)):
+            yield conditional_features[j]
         return None
 
     def run(self):
@@ -318,8 +289,8 @@ def dep_adapted_test():
                                                   distance=standardized_euclidean_distance)
     conditional_features = [0, 1, 2, 3]
     count = 0
-    for i in range(1, len(conditional_features)):  # 子集
-        for features in combinations(conditional_features, i):
+    for j in range(1, len(conditional_features)):  # 子集
+        for features in combinations(conditional_features, j):
             count += 1
             result = algorithm.dep_adapted(list(features))
             print(list(features), result)
@@ -344,7 +315,6 @@ def online_feature_selection_adapted3max_test():
 
 
 def main():
-    # generate_delta_neighborhood_test()
     # generate_distance_triangle_matrix_test()
     # generate_k_nearest_neighborhood_test()
     # generate_gap_neighborhood_test()

@@ -2,6 +2,10 @@
 # process the numerical data(discrete&continuous data)
 
 
+from RoughSet.traditional_rough_set import *
+from tools import *
+
+
 # for continuous data
 def in_delta_neighborhood(universe, x, y, attributes, delta, distance, display=False):
     """
@@ -25,7 +29,27 @@ def in_delta_neighborhood(universe, x, y, attributes, delta, distance, display=F
         return False
 
 
-def generate_delta_neighborhood(universe, attributes, delta, distance, display_distance=False):
+# for continuous data
+def generate_distance_matrix(universe, attributes, distance=euclidean_distance, display_distance=False):
+    """
+    generate the distance triangle matrix
+    :param universe: the universe of objects(feature vector/sample/instance)
+    :param attributes: features' index
+    :param distance: the method to calculate the distance
+    :param display_distance: default is Fault ,if is True, the distance will display
+    :return: the distance triangle matrix
+    """
+    matrix = np.triu(np.zeros(len(universe)**2).reshape(len(universe), len(universe)))
+    for j in range(len(universe)):
+        for k in range(j, len(universe)):
+            matrix[j][k] = distance(universe, j, k, attributes)
+    matrix += matrix.T - np.diag(matrix.diagonal())
+    if display_distance:
+        print(matrix)
+    return matrix
+
+
+def generate_delta_neighborhood(universe, attributes, delta, distance=euclidean_distance, display_distance=False):
     """
     generate the delta neighborhoods of the universe
     :param universe: the universe of objects(feature vector/sample/instance)
@@ -35,26 +59,12 @@ def generate_delta_neighborhood(universe, attributes, delta, distance, display_d
     :param display_distance: default is Fault ,if is True, the distance will display
     :return: list, each element is a list and represent the delta_neighbourhood
     """
+    distance_matrix = generate_distance_matrix(universe, attributes, distance)
     elementary_sets = []
     for i in range(len(universe)):
-        flag = True
-        for elementary_single_set in elementary_sets:
-            if in_delta_neighborhood(
-                    universe, i, elementary_single_set[0], attributes, delta, distance, display=display_distance):
-                elementary_single_set.append(i)
-                flag = False
-                break
-        if flag:
-            elementary_sets.append([i])
-    return elementary_sets
-
-
-def generate_delta_neighborhood_by_distance_matrix(distance_matrix, delta):
-    """
-    generate the delta neighborhoods of the universe
-    :param distance_matrix: the distance matrix
-    :param delta: radius
-    :return: list, each element is a list and represent the delta_neighbourhood
-    """
-    elementary_sets = []
+        element_set = []
+        for j in range(len(universe)):
+            if distance_matrix[i][j] < delta:
+                element_set.append(j)
+        elementary_sets.append(element_set)
     return elementary_sets

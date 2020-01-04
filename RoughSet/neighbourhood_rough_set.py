@@ -49,21 +49,22 @@ def generate_distance_matrix(universe, attributes, distance=euclidean_distance, 
     return matrix
 
 
-def generate_delta_neighborhood(universe, attributes, delta, distance=euclidean_distance, display_distance=False):
+def generate_delta_neighborhood(universe, attributes, delta, distance=euclidean_distance):
     """
     generate the delta neighborhoods of the universe
     :param universe: the universe of objects(feature vector/sample/instance)
     :param attributes: features' index
     :param delta: radius
     :param distance: the function to calculate the distance
-    :param display_distance: default is Fault ,if is True, the distance will display
     :return: list, each element is a list and represent the delta_neighbourhood
     """
     distance_matrix = generate_distance_matrix(universe, attributes, distance)
     elementary_sets = []
     for i in range(len(universe)):
-        element_set = []
+        element_set = [i]
         for j in range(len(universe)):
+            if j == i:
+                continue
             if distance_matrix[i][j] < delta:
                 element_set.append(j)
         elementary_sets.append(element_set)

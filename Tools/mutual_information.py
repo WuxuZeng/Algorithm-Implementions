@@ -3,10 +3,10 @@ entropy
 mutual information
 conditional mutual information(partial mutual information)
 """
-
-
-from RoughSet.traditional_rough_set import *
 import math
+import numpy as np
+import pandas as pd
+from RoughSet.traditional_rough_set import partition, part_partition
 
 
 def conditional_mutual_information(universe, feature_a, feature_b, feature_c):

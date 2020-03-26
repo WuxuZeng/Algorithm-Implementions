@@ -97,7 +97,7 @@ def features_lower_approximations_of_universe_test():
     :return: None
     """
     data = pd.read_csv("approximation_data.csv", header=None)
-    result = features_lower_approximations_of_universe(np.array(data), np.arange(4), np.arange(4, 5))
+    result = lower_approximations_of_universe(np.array(data), np.arange(4), np.arange(4, 5))
     print("approximation result:", result)
     print("\t\t\t\t\t", "[0, 1, 3, 4, 6, 7]")
     result = partition(np.array(data), np.arange(4))
@@ -134,7 +134,7 @@ def features_upper_approximations_of_universe_test():
     :return: None
     """
     data = pd.read_csv("approximation_data.csv", header=None)
-    result = features_upper_approximations_of_universe(np.array(data))
+    result = upper_approximations_of_universe(np.array(data))
     print("result:", result)
     print(len(result))
     return None
@@ -160,7 +160,7 @@ def feature_subset_boundary_region_of_sample_subset_test():
     """
     data = pd.read_csv("approximation_data.csv", header=None)
     del data[4]
-    result = feature_subset_boundary_region_of_sample_subset(np.array(data), [0, 1, 4, 6, 7], [0, 3])
+    result = boundary_region_of_sample_subset(np.array(data), [0, 1, 4, 6, 7], [0, 3])
     print("result:", result)
     print(len(result))
     return None
@@ -173,7 +173,7 @@ def feature_subset_negative_region_of_sample_subset_test():
     """
     data = pd.read_csv("approximation_data.csv", header=None)
     del data[4]
-    result = feature_subset_negative_region_of_sample_subset(
+    result = negative_region_of_sample_subset(
         np.array(data), [0, 1, 4, 6, 7], [0, 3])
     print("result:", result)
     print(len(result))
@@ -190,7 +190,7 @@ def feature_subset_upper_approximations_of_sample_subset_test():
     del data[4]
     print(data.shape)
     # result = feature_subset_low_approximations_of_sample_subset(np.array(data), [i for i in range(8)], np.arange(4))
-    result = feature_subset_upper_approximations_of_sample_subset(np.array(data), [1, 2, 3, 4], [i for i in range(4)])
+    result = upper_approximations_of_sample_subset(np.array(data), [1, 2, 3, 4], [i for i in range(4)])
     print("result:", result)
     return None
 

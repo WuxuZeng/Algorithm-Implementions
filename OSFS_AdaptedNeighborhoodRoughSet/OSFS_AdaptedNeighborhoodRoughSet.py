@@ -18,9 +18,12 @@ https://doi.org/10.1109/ICBK.2017.41
 import copy
 import heapq
 import random
-from RoughSet.neighbourhood_rough_set import *
-from tools import *
+import numpy as np
+import pandas as pd
 from itertools import combinations
+from RoughSet.neighbourhood_rough_set import generate_distance_matrix
+from RoughSet.traditional_rough_set import partition, element_is_include
+from Tools.tools import standardized_euclidean_distance
 
 
 def generate_gap_neighborhood(
@@ -289,5 +292,4 @@ def main():
 
 
 if __name__ == '__main__':
-    i = 0
     main()

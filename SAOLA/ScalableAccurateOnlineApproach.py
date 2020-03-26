@@ -5,11 +5,12 @@ https://doi.org/10.1109/ICDM.2014.63
 """
 
 
-from mutual_information import *
+# from mutual_information import *
+from Tools.mutual_information import mutual_information
 
 
 class OnlineFeatureSelectionAdapted3Max:
-    def __init__(self, universe, conditional_features, decision_features, delta_1 = 0):
+    def __init__(self, universe, conditional_features, decision_features, delta_1=0):
         self.universe = universe
         self.conditional_features = conditional_features
         self.decision_features = decision_features
@@ -32,7 +33,7 @@ class OnlineFeatureSelectionAdapted3Max:
         candidate_features = []
         candidate_features_mi = []
         for feature in self.get_new_feature():
-            feature_mi = mutual_information(feature, self.decision_features)
+            feature_mi = mutual_information(self.universe, feature, self.decision_features)
             if len(candidate_features) == 0:
                 self.delta_2 = feature_mi
             if feature_mi < self.delta_2:
@@ -42,11 +43,11 @@ class OnlineFeatureSelectionAdapted3Max:
             flag = True
             for i in range(len(candidate_features)):
                 if (candidate_features_mi[i] > feature_mi) and \
-                        (mutual_information(candidate_features[i], feature) >= self.delta_2):
+                        (mutual_information(self.universe, candidate_features[i], feature) >= self.delta_2):
                     flag = False
                     break
                 if (feature_mi > candidate_features_mi[i]) and \
-                        (mutual_information(candidate_features[i], feature) >= self.delta_2):
+                        (mutual_information(self.universe, candidate_features[i], feature) >= self.delta_2):
                     candidate_features.pop(i)
                     candidate_features_mi.pop(i)
                     i -= 1

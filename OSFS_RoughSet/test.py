@@ -1,6 +1,15 @@
+"""
+2020-03-16
+result = algorithm.run(non_significant=no_significance)
+论文上的例子与实验进行了验证，无误
+
+两个测试结果与之前记录的数据不同
+"""
+
+
+import numpy as np
 import pandas as pd
-from OS_NRRSAR_SA.OS_NRRSAR_SA import *
-from RoughSet.traditional_rough_set import *
+from OS_NRRSAR_SA import *
 
 
 class NoiseResistantDependencyMeasureTest:
@@ -14,6 +23,8 @@ class NoiseResistantDependencyMeasureTest:
         result = NoiseResistantDependencyMeasure.mean_positive_region(
             np.array(data), [0, 1, 2, 3, 4], [i for i in range(5)])
         print("result:", result)
+        # 2020-03-16
+        # result: [3.0, 3.0, 3.0, 3.0, 3.0]
         return None
 
     @staticmethod
@@ -27,6 +38,15 @@ class NoiseResistantDependencyMeasureTest:
             proximity_of_objects_in_boundary_region_to_mean_positive_region_based_distance(
                 data, [0, 1, 2], [3, 4], distance=NoiseResistantDependencyMeasure.variation_of_euclidean_distance)
         print("proximity:", proximity)
+        # 2020-03-16
+        # proximity: 0.2886751345948129
+        # 0.5555555555555556
+        # 0
+        # 0.2222222222222222
+        # 0.7777777777777778
+        # 0.1
+        # 0.07142857142857142
+        # 0.75
         return None
 
     @staticmethod
@@ -89,22 +109,29 @@ def noise_resistant_assisted_quick_reduction_test():
 
 
 def online_streaming_noise_resistant_assistant_aided_rough_set_attribute_reduction_using_significance_analysis_test():
-    universe = np.array(pd.read_csv("approximation_data.csv", header=None))
+    universe = np.array(pd.read_csv("example_data.csv", header=None))
     conditional_features = [0, 1, 2, 3]
     decision_features = [4]
     algorithm = OnlineStreamingNoiseResistantAidedRoughSetAttributeRecutionSignificanceAnalysis(
         universe, conditional_features, decision_features)
-    result = algorithm.run(non_significant="max subset")
+    no_significance = "max subset"
+    result = algorithm.run(non_significant=no_significance)
+    print(no_significance, end="__")
     print("approximation_data reduction:", result)
     # approximation_data reduction: [0, 1, 2]
     # The time used: 0.006995677947998047 seconds
+
+    # 2020-03-16实验结果
+    # max subset__approximation_data reduction: [0, 1, 2, 3]
 
     universe = np.array(pd.read_csv("example_data.csv", header=None))
     conditional_features = [i for i in range(0, 5)]
     decision_features = [5]
     algorithm = OnlineStreamingNoiseResistantAidedRoughSetAttributeRecutionSignificanceAnalysis(
         universe, conditional_features, decision_features)
-    result = algorithm.run(non_significant="max subset")
+    no_significance = "max subset"
+    result = algorithm.run(non_significant=no_significance)
+    print(no_significance, end="__")
     print("example_data reduction:", result)
     # The time used: 0.011988639831542969 seconds
     # example_data reduction: [2, 4]
@@ -114,7 +141,9 @@ def online_streaming_noise_resistant_assistant_aided_rough_set_attribute_reducti
     decision_features = [5]
     algorithm = OnlineStreamingNoiseResistantAidedRoughSetAttributeRecutionSignificanceAnalysis(
         universe, conditional_features, decision_features)
-    result = algorithm.run(non_significant="SEB1")
+    no_significance = "SEB1"
+    result = algorithm.run(non_significant=no_significance)
+    print(no_significance, end="__")
     print("example_data reduction:", result)
     # The time used: 0.009993553161621094 seconds
     # example_data reduction: [3, 4]
@@ -124,10 +153,15 @@ def online_streaming_noise_resistant_assistant_aided_rough_set_attribute_reducti
     decision_features = [10000]
     algorithm = OnlineStreamingNoiseResistantAidedRoughSetAttributeRecutionSignificanceAnalysis(
         universe, conditional_features, decision_features)
-    result = algorithm.run(non_significant="max subset")
+    no_significance = "max subset"
+    result = algorithm.run(non_significant=no_significance)
+    print(no_significance, end="__")
     print("arcene_train reduction:", result)
     # arcene_train reduction: [9997, 9998, 9999]
     # The time used: 374.79046154022217 secondsprint('The time used: {} seconds'.format(time.time() - start))
+
+    # 2020-03-16实验结果
+    # max subset__arcene_train reduction: [6579]
     return
 
 

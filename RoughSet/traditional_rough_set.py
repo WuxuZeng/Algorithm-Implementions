@@ -5,13 +5,19 @@ process the categorical data(nominal&ordinal) and discrete numerical data
 partition
 lower and upper approximations
 positive, boundary and negative regions
+
+attention
+# 若要设置is_indiscernible函数请注意，只能对样本和样本直接比较
+# 连续数据请看neighbourhood_rough_set
+# 如果需要扩展，用到别的信息，需要改写本文件中三份partition代码，后续扩展可从不定参数入手
+# 连续数据求邻域距离直接用numpy矩阵计算更快，所以这里没有实现单个样本和单个样本的比较
 """
 
 
 import numpy as np
 
 
-def is_indiscernible(universe, x, y, attributes):
+def is_indiscernible_discrete(universe, x, y, attributes):
     """
     if the two feature vector is indiscernible, return True, else return False
     Applies to attributes whose attribute values are discrete data
@@ -44,11 +50,12 @@ def is_indiscernible(universe, x, y, attributes):
 # 			break
 # 	if flag
 # 		为 x 创建等价类加入到基本集中
-def partition(universe, attributes):
+def partition(universe, attributes, is_indiscernible=is_indiscernible_discrete):
     """
     calculate the partition of universe on attributes
     :param universe: the universe of objects(feature vector/sample/instance)
     :param attributes: list, a set of features' index
+    :param is_indiscernible: to judge if the two feature vector is indiscernible
     :return: list, each element is a list and represent the equivalence class
     """
     elementary_sets = []
@@ -66,12 +73,13 @@ def partition(universe, attributes):
 
 # for discrete data
 # 对给出下标的样本进行划分
-def part_partition(universe, samples, attributes):
+def part_partition(universe, samples, attributes, is_indiscernible=is_indiscernible_discrete):
     """
     calculate the partition of part universe on attributes
     :param universe: the universe of objects(feature vector/sample/instance)
     :param samples: the index of part samples
     :param attributes: features' index
+    :param is_indiscernible: to judge if the two feature vector is indiscernible
     :return: list, each element is a list and represent the equivalence class
     """
     elementary_sets = []
@@ -98,11 +106,12 @@ def part_partition(universe, samples, attributes):
 #         如果 y 和 x为不可分辨关系
 #             将y加入到x的等价类中
 # 	    将y从样本集中移除
-def partition2(raw_universe, attributes):
+def partition2(raw_universe, attributes, is_indiscernible=is_indiscernible_discrete):
     """
     Method 2 to calculate the partition of raw_universe on attributes
     :param raw_universe: the universe of objects(feature vector/sample/instance)
     :param attributes: features' index
+    :param is_indiscernible: to judge if the two feature vector is indiscernible
     :return: list, each element is a list and represent the equivalence class
     """
     universe = list(np.arange(raw_universe.shape[0]))
@@ -122,10 +131,9 @@ def partition2(raw_universe, attributes):
     return elementary_sets
 
 
-# unused
 def element_is_include(element, element_set):
     """
-    judge if the element is included by(belong to) the mylist2
+    judge if the element is included by(belong to) the my list 2
     :param element: a object's index
     :param element_set: list, a set of objects' index
     :return: True/False
@@ -160,7 +168,7 @@ def set_is_include(set1, set2):
     return False
 
 
-def feature_subset_low_approximations_of_sample_subset(universe, sample_subset, feature_subset):
+def low_approximations_of_sample_subset(universe, sample_subset, feature_subset):
     """
     get the feature_subset lower approximations of sample_subset
     :param universe: the universe of objects(feature vector/sample/instance)
@@ -177,7 +185,7 @@ def feature_subset_low_approximations_of_sample_subset(universe, sample_subset, 
     return lower_approximations
 
 
-def features_lower_approximations_of_universe(universe, attributes, labels):
+def lower_approximations_of_universe(universe, attributes, labels):
     """
     get the features lower approximations of U/R
     :param universe: the universe of objects(feature vector/sample/instance)
@@ -209,18 +217,17 @@ def is_contain(x, y):
         return False
 
 
-def features_upper_approximations_of_universe(universe):
+def upper_approximations_of_universe(universe):
     """
     get the features upper approximations of U/R
     :param universe: the universe of objects(feature vector/sample/instance)
     :return: list, upper_approximations is composed by a set of objects' index
     """
     upper_approximations = list(np.arange(len(universe)))
-    upper_approximations.sort()
     return upper_approximations
 
 
-def feature_subset_upper_approximations_of_sample_subset(universe, sample_subset, feature_subset):
+def upper_approximations_of_sample_subset(universe, sample_subset, feature_subset):
     """
     get the feature_subset upper approximations of sample_subset
     :param universe: the universe of objects(feature vector/sample/instance)
@@ -237,7 +244,7 @@ def feature_subset_upper_approximations_of_sample_subset(universe, sample_subset
     return upper_approximations
 
 
-def feature_subset_positive_region_of_sample_subset(universe, sample_subset, feature_subset):
+def positive_region_of_sample_subset(universe, sample_subset, feature_subset):
     """
     get the feature_subset positive_region of sample_subset
     :param universe: the universe of objects(feature vector/sample/instance)
@@ -245,11 +252,16 @@ def feature_subset_positive_region_of_sample_subset(universe, sample_subset, fea
     :param feature_subset: features' index
     :return: list, positive_region is composed by a set of objects' index
     """
-    positive_region = feature_subset_low_approximations_of_sample_subset(universe, sample_subset, feature_subset)
+    positive_region = low_approximations_of_sample_subset(universe, sample_subset, feature_subset)
     return positive_region
 
 
-def feature_subset_boundary_region_of_sample_subset(universe, sample_subset, feature_subset):
+def positive_region_of_universe(universe, attributes, labels):
+    positive_region = lower_approximations_of_universe(universe, attributes, labels)
+    return positive_region
+
+
+def boundary_region_of_sample_subset(universe, sample_subset, feature_subset):
     """
     get the feature_subset boundary_region of sample_subset
     :param universe: the universe of objects(feature vector/sample/instance)
@@ -257,13 +269,13 @@ def feature_subset_boundary_region_of_sample_subset(universe, sample_subset, fea
     :param feature_subset: features' index
     :return: list, boundary_region is composed by a set of objects' index
     """
-    upper_approximations = feature_subset_upper_approximations_of_sample_subset(universe, sample_subset, feature_subset)
-    lower_approximations = feature_subset_low_approximations_of_sample_subset(universe, sample_subset, feature_subset)
+    upper_approximations = upper_approximations_of_sample_subset(universe, sample_subset, feature_subset)
+    lower_approximations = low_approximations_of_sample_subset(universe, sample_subset, feature_subset)
     boundary_region = [i for i in upper_approximations if i not in lower_approximations]
     return boundary_region
 
 
-def feature_subset_negative_region_of_sample_subset(universe, sample_subset, feature_subset):
+def negative_region_of_sample_subset(universe, sample_subset, feature_subset):
     """
     get the feature_subset negative_region of sample_subset
     :param universe: the universe of objects(feature vector/sample/instance)
@@ -271,7 +283,7 @@ def feature_subset_negative_region_of_sample_subset(universe, sample_subset, fea
     :param feature_subset: features' index
     :return: list, negative_region is composed by a set of objects' index
     """
-    upper_approximations = feature_subset_upper_approximations_of_sample_subset(universe, sample_subset, feature_subset)
+    upper_approximations = upper_approximations_of_sample_subset(universe, sample_subset, feature_subset)
     return [i for i in np.arange(len(universe)) if i not in upper_approximations]
 
 
@@ -285,11 +297,6 @@ def dependency(universe, attributes, labels):
     All values of attributes from D are uniquely determined by the values of attributes from C.),
     the dependency of features_1 to features_2, POS_features_1(features_2)
     """
-    partition_2 = partition(universe, labels)
-    positive_region_size = 0
-    for y in partition_2:
-        positive_region_size += \
-            len(feature_subset_positive_region_of_sample_subset(universe, y, attributes))
-        # print(feature_subset_positive_region_of_sample_subset(universe, y, features_1))
+    positive_region_size = len(positive_region_of_universe(universe, attributes, labels))
     dependency_degree = positive_region_size/len(universe)
     return dependency_degree

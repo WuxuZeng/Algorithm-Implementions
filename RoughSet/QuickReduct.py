@@ -1,5 +1,5 @@
 import copy
-from RoughSet.traditional_rough_set import *
+from traditional_rough_set import dependency
 
 
 class QuickReduction:

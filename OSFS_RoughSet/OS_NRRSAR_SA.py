@@ -7,7 +7,8 @@ import time
 import math
 import copy
 import random
-from RoughSet.traditional_rough_set import *
+from RoughSet.traditional_rough_set import positive_region_of_sample_subset, partition, \
+    boundary_region_of_sample_subset, dependency
 
 
 class NoiseResistantDependencyMeasure:
@@ -27,7 +28,7 @@ class NoiseResistantDependencyMeasure:
         :param feature_subset: features' index
         :return: list(object), the mean of all object attributes values in positive region
         """
-        positive_region = feature_subset_positive_region_of_sample_subset(universe, sample_subset, feature_subset)
+        positive_region = positive_region_of_sample_subset(universe, sample_subset, feature_subset)
         total = []
         mean = []
         for i in range(len(feature_subset)):
@@ -50,16 +51,16 @@ class NoiseResistantDependencyMeasure:
         :param universe: the universe of objects(feature vector/sample/instance)
         :param features_1: list, a set of features' serial number
         :param features_2: list, a set of features' serial number
-        :param distance: the method to calcalate the distance of objects
+        :param distance: the method to calculate the distance of objects
         :return: float
         """
         partition_2 = partition(universe, features_2)
         boundary = []
         positive = []
         for subset in partition_2:
-            boundary.extend(feature_subset_boundary_region_of_sample_subset(universe, subset, features_1))
+            boundary.extend(boundary_region_of_sample_subset(universe, subset, features_1))
             boundary = list(set(boundary))
-            positive.extend(feature_subset_positive_region_of_sample_subset(universe, subset, features_1))
+            positive.extend(positive_region_of_sample_subset(universe, subset, features_1))
         if len(boundary) == 0:
             return 1
         if len(positive) == 0:
@@ -202,7 +203,7 @@ class NoiseResistantAssistedQuickReduct:
         count = 0
         while destination_dependency != candidate_dependency:
             count += 1
-            print(count)
+            # print(count)
             noise_resistant_increase = 0
             test_features = copy.deepcopy(candidate_features)
             count1 = 0

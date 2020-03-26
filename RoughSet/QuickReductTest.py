@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from RoughSet.QuickReduct import QuickReduction
+from QuickReduct import QuickReduction
 
 
 def quick_reduction_test():
@@ -12,6 +12,7 @@ def quick_reduction_test():
 
     # data = pd.read_csv("approximation_data.csv", header=None)
     # result = algorithm.run(np.array(data), [0, 1, 2, 3], [4])
+    # print("reduction:", result)
     # reduction: [0, 2]
 
     data = pd.read_csv("arcene_train.csv", header=None)

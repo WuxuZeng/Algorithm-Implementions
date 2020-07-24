@@ -166,14 +166,14 @@ def online_streaming_noise_resistant_assistant_aided_rough_set_attribute_reducti
 
 
 def main():
-    noise_resistant_assisted_quick_reduction_test()
+    # noise_resistant_assisted_quick_reduction_test()
     online_streaming_noise_resistant_assistant_aided_rough_set_attribute_reduction_using_significance_analysis_test()
-    NoiseResistantDependencyMeasureTest.mean_positive_region_test()
-    NoiseResistantDependencyMeasureTest. \
-        proximity_of_objects_in_boundary_region_to_mean_positive_region_based_distance_test()
-    NoiseResistantDependencyMeasureTest.related_information_of_subset_b_test()
-    NoiseResistantDependencyMeasureTest.proximity_of_boundary_region_to_positive_region_based_portion_test()
-    NoiseResistantDependencyMeasureTest.noisy_dependency_of_feature_subset_a_on_feature_subset_b_test()
+    # NoiseResistantDependencyMeasureTest.mean_positive_region_test()
+    # NoiseResistantDependencyMeasureTest. \
+    #     proximity_of_objects_in_boundary_region_to_mean_positive_region_based_distance_test()
+    # NoiseResistantDependencyMeasureTest.related_information_of_subset_b_test()
+    # NoiseResistantDependencyMeasureTest.proximity_of_boundary_region_to_positive_region_based_portion_test()
+    # NoiseResistantDependencyMeasureTest.noisy_dependency_of_feature_subset_a_on_feature_subset_b_test()
     pass
 
 

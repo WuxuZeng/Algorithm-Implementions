@@ -7,9 +7,9 @@ def neighborhood_uncertainty_of_sample(universe_num, neighborhood):
     return -log10(len(neighborhood) / universe_num)
 
 
-def average_neighborhood_uncertainty_of_universe(universe_num, neighborhoods):
+def average_neighborhood_uncertainty_of_universe(universe_num, neighborhoods, kinds):
     add_sum = 0
     for neighborhood in neighborhoods:
-        add_sum += log10(len(neighborhood)/universe_num)
+        add_sum += (log10(len(neighborhood)/universe_num))/log10(kinds)
     return -add_sum/universe_num
 

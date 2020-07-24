@@ -1,5 +1,7 @@
 from RoughSet.neighbourhood_rough_set import *
+from neighborhood_rough_set_ct import dependency_neighborhood_neighborhood
 import pandas as pd
+import time
 
 
 def generate_delta_neighborhood_test():
@@ -37,9 +39,21 @@ def generate_k_nearest_neighborhood_test():
     return
 
 
+def dependency_test():
+    data = np.array(pd.read_csv("arcene_train.csv", delimiter=','))
+    start = time.time()
+    temp = start
+    dependency_neighborhood(data, [i for i in range(data.shape[1] - 1)], [data.shape[1] - 1], 0.2)
+    print("{}  ".format(time.time() - temp), "{}".format(time.time() - start))
+    temp = time.time()
+    dependency_neighborhood_neighborhood(data, [i for i in range(data.shape[1] - 1)], [data.shape[1] - 1], 0.2)
+    print("{}  ".format(time.time() - temp), "{}".format(time.time() - start))
+
+
 def main():
-    generate_delta_neighborhood_test()
-    generate_k_nearest_neighborhood_test()
+    # generate_delta_neighborhood_test()
+    # generate_k_nearest_neighborhood_test()
+    dependency_test()
     pass
 
 

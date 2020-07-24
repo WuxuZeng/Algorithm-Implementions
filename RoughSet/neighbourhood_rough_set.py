@@ -4,10 +4,11 @@
 
 import heapq
 import numpy as np
+from scipy.spatial.distance import pdist, squareform
 from RoughSet.traditional_rough_set import set_is_include, partition, is_contain
 
 # for continuous data
-from Tools.tools import euclidean_distance
+from Tools.tools import euclidean_distance, standardized_euclidean_distance
 
 
 def in_delta_neighborhood(universe, x, y, attributes, delta, distance, display=False):
@@ -52,6 +53,31 @@ def generate_distance_matrix(universe, attributes, distance=euclidean_distance, 
     return matrix
 
 
+# for continuous data
+def generate_euclidean_distance_matrix_by_vector(universe, attributes, standard=False, display_distance=False):
+    """
+    generate the distance triangle matrix by vector calculation
+    :param universe: the universe of objects(feature vector/sample/instance)
+    :param attributes: features' index
+    :param standard: if use the standard euclidean distance
+    :param display_distance: default is Fault ,if is True, the distance will display
+    :return: the distance triangle matrix
+    """
+
+    if standard:
+        matrix = squareform(pdist(universe[:, attributes], metric="seuclidean"))
+    else:
+        universe = universe[:, attributes]
+        matrix = np.triu(np.zeros(universe.shape[0] ** 2).reshape(universe.shape[0], universe.shape[0]))
+        for j in range(len(universe)):
+            for k in range(j, universe.shape[0]):
+                matrix[j][k] = np.linalg.norm(universe[j]-universe[k])
+        matrix += matrix.T - np.diag(matrix.diagonal())
+    if display_distance:
+        print(matrix)
+    return matrix
+
+
 def generate_delta_neighborhood(universe, attributes, delta, distance=euclidean_distance, sort=False):
     """
     generate the delta neighborhoods of the universe
@@ -62,7 +88,12 @@ def generate_delta_neighborhood(universe, attributes, delta, distance=euclidean_
     :param sort: the result is sorted
     :return: list, each element is a list and represent the delta_neighborhood
     """
-    distance_matrix = generate_distance_matrix(universe, attributes, distance)
+    if distance == euclidean_distance:
+        distance_matrix = generate_euclidean_distance_matrix_by_vector(universe, attributes)
+    elif distance == standardized_euclidean_distance:
+        distance_matrix = generate_euclidean_distance_matrix_by_vector(universe, attributes, standard=True)
+    else:
+        distance_matrix = generate_distance_matrix(universe, attributes, distance)
     elementary_sets = []
     if sort:
         for i in range(len(universe)):
@@ -84,23 +115,27 @@ def generate_delta_neighborhood(universe, attributes, delta, distance=euclidean_
 
 
 # for continuous data
-def generate_k_nearest_neighborhood(universe, attributes, k, distance, display_distance=False):
+def generate_k_nearest_neighborhood(universe, attributes, k, distance_matrix):
     """
     generate the k nearest neighborhoods of the universe
     :param universe: the universe of objects(feature vector/sample/instance)
     :param attributes: features' index
     :param k: k
-    :param distance: the method to calculate the distance
-    :param display_distance: default is Fault ,if is True, the distance will display
+    :param distance_matrix: the method to calculate the distance
     :return: list, the k_nearest_neighborhood(raw_universe/attributes)
     """
-    distance = generate_distance_matrix(universe, attributes, distance, display_distance)
+    if distance_matrix == euclidean_distance:
+        distance_matrix = generate_euclidean_distance_matrix_by_vector(universe, attributes)
+    elif distance_matrix == standardized_euclidean_distance:
+        distance_matrix = generate_euclidean_distance_matrix_by_vector(universe, attributes, standard=True)
+    else:
+        distance_matrix = generate_distance_matrix(universe, attributes, distance_matrix)
     universe_index = list(np.arange(universe.shape[0]))
     elementary_sets = []  # R-elementary sets
     j = 0
     while j < len(universe_index):
-        k_nearest_index = \
-            heapq.nsmallest(k + 1, range(len(distance[universe_index[j]])), distance[universe_index[j]].take)
+        k_nearest_index = heapq.nsmallest(k + 1, range(len(distance_matrix[universe_index[j]])),
+                                          distance_matrix[universe_index[j]].take)
         elementary_sets.append(k_nearest_index)
         j += 1
     return elementary_sets

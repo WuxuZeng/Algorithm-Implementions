@@ -67,8 +67,9 @@ def conditional_entropy(universe, feature_b, feature_a, display=False):
     total = 0
     for a in partitions_a:
         inner_total = 0
-        length = len(a)
+        # length = len(a)
         for b in partitions_b:
+            length = len(b)
             a_b = [i for i in a if i in b]
             probability = len(a_b) / length
             if display:

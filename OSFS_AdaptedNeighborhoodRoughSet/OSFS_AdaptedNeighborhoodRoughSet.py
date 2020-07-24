@@ -1,9 +1,8 @@
 """
-2020-03-15检查结果：
+2020-06-27code review：
 论文中4.2节求邻域的例子能够对照上，Dep-Adapted部分对照作者源代码修改
-其中邻域部分与论文有冲突的G_mean取n-1，同论文一致
-另：论文4.4节的例子与本实验计算得出的结论不一致！
-OFS-A3M同论文中伪代码无出处
+其中关于G_mean的求解，作者的代码(分母取n-2)与论文(分母取n-1)有冲突，这里取n-1，同论文和论文中例子保持一致
+另：G_mean取n-2能够得出与论文4.4节例子的结果相一致。
 
 Online streaming feature selection using adapted Neighborhood Rough Set
 author: Peng Zhou, Xuegang Hu, Peipei Li, Xindong Wu
@@ -18,26 +17,31 @@ https://doi.org/10.1109/ICBK.2017.41
 import copy
 import heapq
 import random
+import time
+
 import numpy as np
 import pandas as pd
 from itertools import combinations
-from RoughSet.neighbourhood_rough_set import generate_distance_matrix
-from RoughSet.traditional_rough_set import partition, element_is_include
-from Tools.tools import standardized_euclidean_distance
+from RoughSet.neighbourhood_rough_set import generate_euclidean_distance_matrix_by_vector, generate_distance_matrix
+from RoughSet.traditional_rough_set import partition
+from Tools.tools import standardized_euclidean_distance, euclidean_distance
 
 
-def generate_gap_neighborhood(
-        universe, attributes, gap_weight=1., distance=standardized_euclidean_distance, display_distance=False):
+def generate_gap_neighborhood(universe, attributes, gap_weight=1., distance=standardized_euclidean_distance):
     """
     generate the gap neighborhoods of the universe
     :param universe: the universe of objects(feature vector/sample/instance)
     :param attributes: features' index
     :param gap_weight: the weight of gap
     :param distance: the method to calculate the distance
-    :param display_distance: default is Fault ,if is True, the distance will display
     :return: list, the k_nearest_neighborhood(raw_universe/attributes)
     """
-    distance_matrix = generate_distance_matrix(universe, attributes, distance, display_distance)
+    if distance == euclidean_distance:
+        distance_matrix = generate_euclidean_distance_matrix_by_vector(universe, attributes)
+    elif distance == standardized_euclidean_distance:
+        distance_matrix = generate_euclidean_distance_matrix_by_vector(universe, attributes, standard=True)
+    else:
+        distance_matrix = generate_distance_matrix(universe, attributes, distance)
     universe_index = list(np.arange(universe.shape[0]))
     elementary_sets = []  # R-elementary sets
     i = 0
@@ -52,6 +56,7 @@ def generate_gap_neighborhood(
         # the formulate in the paper is G_mean = (D_max-D_min)/(n-1)
         # the source code imply with Matlab by the author is G_mean = (D_max-D_min)/(n-2)
         distance_mean = (distance_max - distance_min) / (universe.shape[0] - 1)
+        # distance_mean = (distance_max - distance_min) / (universe.shape[0] - 2)
         gap = distance_mean * gap_weight
         j = 2
 
@@ -61,14 +66,6 @@ def generate_gap_neighborhood(
                     distance_matrix[universe_index[i]][distance_sort[j - 1]] >= gap:
                 break
             j += 1
-
-        # put the xi to the front
-        index = distance_sort.index(j)
-        if index != 0:
-            distance_sort.remove(j)
-            distance_sort.insert(index, distance_sort[0])
-            distance_sort.remove(distance_sort[0])
-            distance_sort.insert(0, j)
 
         elementary_sets.append(distance_sort[:j])
         i += 1
@@ -80,7 +77,7 @@ def generate_gap_neighborhood_test():
     data = pd.read_csv("ExampleData.csv", header=None)
     del data[4]
     result = generate_gap_neighborhood(
-        np.array(data), [0], 1.5, standardized_euclidean_distance)
+        np.array(data), [0, 1], 1.5, standardized_euclidean_distance)
     print(result)
     return
 
@@ -95,108 +92,23 @@ class OnlineFeatureSelectionAdapted3Max:
         return
 
     def dep_adapted(self, attributes):
+        if len(attributes) == 0:
+            return 0
         part_d_s = 0
         gap_neighborhoods = \
             generate_gap_neighborhood(self.universe, attributes, gap_weight=self.gap_weight, distance=self.distance)
         partitions = partition(self.universe, self.decision_features)
 
-        # 用正域去理解
-        # result: [3]
-        # for gap_neighborhood in gap_neighborhoods:
-        #     if set_is_include(gap_neighborhood, partitions):
-        #         part_d_s += 1
-        # d_s = part_d_s / self.universe.shape[0]
-
-        # for gap_neighborhood in gap_neighborhoods:
-        #     if set_is_include(gap_neighborhood, partitions):
-        #         part_d_s += 1
-        # d_s = part_d_s / len(attributes)
-
-        # 样本本身不包含进邻域,s_card计算的是相似度，同样本标签一致的对象为positive sample，f1相似度正确
-        # result: [0, 3]
-        # for gap_neighborhood in gap_neighborhoods:
-        #     for single_partition in partitions:
-        #         if element_is_include(gap_neighborhood[0], single_partition):
-        #             part_d_s += \
-        #                 (len([j for j in gap_neighborhood if j in single_partition])-1) / (len(gap_neighborhood)-1)
-        # d_s = part_d_s / self.universe.shape[0]
-
-        # for gap_neighborhood in gap_neighborhoods:
-        #     for single_partition in partitions:
-        #         if element_is_include(gap_neighborhood[0], single_partition):
-        #             part_d_s += \
-        #                 (len([j for j in gap_neighborhood if j in single_partition])-1) / (len(gap_neighborhood)-1)
-        # d_s = part_d_s / len(attributes)
-
         # 样本本身包含进邻域,s_card计算的是相似度，同样本标签一致的对象为positive sample
         # 根据作者源代码，确定是这种形式
-        # 邻域中同目标样本一致的标签的样本数（排除目标样本）除以邻域中样本总数（不排除目标样本）
+        # 邻域中同目标样本一致的标签的样本数（排除目标样本）除以邻域中样本总数（也排除目标样本）
         # result: [0, 3]
         for gap_neighborhood in gap_neighborhoods:
             for single_partition in partitions:
-                if element_is_include(gap_neighborhood[0], single_partition):
+                if gap_neighborhood[0] in single_partition:
                     part_d_s += \
-                        (len([j for j in gap_neighborhood if j in single_partition]) - 1) / (len(gap_neighborhood))
+                        (len([j for j in gap_neighborhood if j in single_partition]) - 1) / (len(gap_neighborhood) - 1)
         d_s = part_d_s / self.universe.shape[0]
-
-        # for gap_neighborhood in gap_neighborhoods:
-        #     for single_partition in partitions:
-        #         if element_is_include(gap_neighborhood[0], single_partition):
-        #             part_d_s += \
-        #                 (len([j for j in gap_neighborhood if j in single_partition])) / (len(gap_neighborhood))
-        # d_s = part_d_s / len(attributes)
-
-        # 样本本身包含进邻域,s_card计算的是相似度，标签为1的对象为positive sample
-        # result: [0, 2]
-        # for gap_neighborhood in gap_neighborhoods:
-        #     if element_is_include(gap_neighborhood[0], partitions[1]):
-        #         s_card += (len([j for j in gap_neighborhood if j in partitions[1]]) - 1) / (len(gap_neighborhood) - 1)
-        #     if element_is_include(gap_neighborhood[0], partitions[0]):
-        #         part_d_s += (len([j for j in gap_neighborhood if j in partitions[1]])) / (len(gap_neighborhood) - 1)
-        # d_s = part_d_s / self.universe.shape[0]
-
-        # for gap_neighborhood in gap_neighborhoods:
-        #     if element_is_include(gap_neighborhood[0], partitions[1]):
-        #         s_card += (len([j for j in gap_neighborhood if j in partitions[1]]) - 1) / (len(gap_neighborhood) - 1)
-        #     if element_is_include(gap_neighborhood[0], partitions[0]):
-        #         part_d_s += (len([j for j in gap_neighborhood if j in partitions[1]])) / (len(gap_neighborhood) - 1)
-        # d_s = part_d_s / len(attributes)
-
-        # 样本本身不包含进邻域,s_card计算的是相似度，标签为1的对象为positive sample
-        # result: [0, 3]
-        # for gap_neighborhood in gap_neighborhoods:
-        #     if element_is_include(gap_neighborhood[0], partitions[1]):
-        #         s_card += (len([j for j in gap_neighborhood if j in partitions[1]])) / (len(gap_neighborhood))
-        #     if element_is_include(gap_neighborhood[0], partitions[0]):
-        #         part_d_s += (len([j for j in gap_neighborhood if j in partitions[0]])) / (len(gap_neighborhood))
-        # d_s = part_d_s / self.universe.shape[0]
-
-        # for gap_neighborhood in gap_neighborhoods:
-        #     if element_is_include(gap_neighborhood[0], partitions[1]):
-        #         s_card += (len([j for j in gap_neighborhood if j in partitions[1]])) / (len(gap_neighborhood))
-        #     if element_is_include(gap_neighborhood[0], partitions[0]):
-        #         part_d_s += (len([j for j in gap_neighborhood if j in partitions[0]])) / (len(gap_neighborhood))
-        # d_s = part_d_s / len(attributes)
-
-        # result: [0, 3]
-        # for gap_neighborhood in gap_neighborhoods:
-        #     if element_is_include(gap_neighborhood[0], partitions[1]):
-        #         part_d_s += (len([j for j in gap_neighborhood if j in partitions[1]]) - 1)
-        #  / (len(gap_neighborhood) - 1)
-        #     if element_is_include(gap_neighborhood[0], partitions[0]):
-        #         part_d_s += (len([j for j in gap_neighborhood if j in partitions[0]]) - 1)
-        #  / (len(gap_neighborhood) - 1)
-        # d_s = part_d_s / self.universe.shape[0]
-
-        # for gap_neighborhood in gap_neighborhoods:
-        #     if element_is_include(gap_neighborhood[0], partitions[1]):
-        #         part_d_s += (len([j for j in gap_neighborhood if j in partitions[1]]) - 1)
-        #  / (len(gap_neighborhood) - 1)
-        #     if element_is_include(gap_neighborhood[0], partitions[0]):
-        #         part_d_s += (len([j for j in gap_neighborhood if j in partitions[0]]) - 1)
-        #  / (len(gap_neighborhood) - 1)
-        # d_s = part_d_s / len(attributes)
-
         return d_s
 
     def get_new_feature(self):
@@ -210,10 +122,20 @@ class OnlineFeatureSelectionAdapted3Max:
         return None
 
     def run(self):
+        start = time.time()
+        redundant_time = 0
+        redundant_count = 0
+        temp = start
         candidate_features = []
         candidate_dependency = 0
         mean_dependency_of_candidate = 0
+        count = 0
         for feature in self.get_new_feature():
+            count += 1
+            if count % 1000 == 0:
+                print(count)
+                print("{}  ".format(time.time() - temp), "{}".format(time.time() - start))
+                temp = time.time()
             feature_dependency = self.dep_adapted([feature])
             if feature_dependency < mean_dependency_of_candidate:
                 continue
@@ -233,19 +155,27 @@ class OnlineFeatureSelectionAdapted3Max:
                     continue
                 candidate_features.append(feature)
                 random.shuffle(candidate_features)
-                for test_feature in candidate_features:
+                i = 0
+                redundant_start = time.time()
+                redundant_count += 1
+                while i < len(candidate_features):
                     temp_candidate_features = copy.deepcopy(candidate_features)
-                    temp_candidate_features.remove(test_feature)
+                    temp_candidate_features.pop(i)
                     temp_candidate_features_dependency = self.dep_adapted(temp_candidate_features)
                     if (self.dep_adapted(candidate_features) - temp_candidate_features_dependency) == 0:
-                        candidate_features = temp_candidate_features
-                        test_feature_dependency = self.dep_adapted([test_feature])
+                        test_feature_dependency = self.dep_adapted([candidate_features[i]])
+                        candidate_features.pop(i)
+                        i -= 1
                         if mean_dependency_of_candidate > 0:
                             mean_dependency_of_candidate = \
                                 (mean_dependency_of_candidate*(len(candidate_features)+1) - test_feature_dependency) /\
                                 len(candidate_features)
-                    pass
+                    i += 1
+                redundant_time += time.time() - redundant_start
             pass
+        print('The time used: {} seconds'.format(time.time() - start))
+        print('redundant_time: {} seconds'.format(redundant_time))
+        print(redundant_count)
         return candidate_features
 
 
@@ -257,7 +187,7 @@ def dep_adapted_test():
     result = algorithm.dep_adapted([0, 1])
     print(str([0, 1]), result)
     count = 0
-    for j in range(1, len(conditional_features)):  # 子集
+    for j in range(1, len(conditional_features)):  # subset
         for features in combinations(conditional_features, j):
             count += 1
             result = algorithm.dep_adapted(list(features))

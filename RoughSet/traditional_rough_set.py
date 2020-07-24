@@ -15,6 +15,7 @@ attention
 
 
 import numpy as np
+import pandas as pd
 
 
 def is_indiscernible_discrete(universe, x, y, attributes):
@@ -50,7 +51,7 @@ def is_indiscernible_discrete(universe, x, y, attributes):
 # 			break
 # 	if flag
 # 		为 x 创建等价类加入到基本集中
-def partition(universe, attributes, is_indiscernible=is_indiscernible_discrete):
+def partition_old(universe, attributes, is_indiscernible=is_indiscernible_discrete):
     """
     calculate the partition of universe on attributes
     :param universe: the universe of objects(feature vector/sample/instance)
@@ -58,6 +59,10 @@ def partition(universe, attributes, is_indiscernible=is_indiscernible_discrete):
     :param is_indiscernible: to judge if the two feature vector is indiscernible
     :return: list, each element is a list and represent the equivalence class
     """
+    if len(attributes) == 0:
+        raise Exception("attributes' length can't be zero.")
+    if len(universe) == 0:
+        return []
     elementary_sets = []
     for i in range(len(universe)):
         flag = True
@@ -69,6 +74,34 @@ def partition(universe, attributes, is_indiscernible=is_indiscernible_discrete):
         if flag:
             elementary_sets.append([i])
     return elementary_sets
+
+
+def partition(universe, attributes):
+    elementary_sets = pd.DataFrame(universe).groupby(attributes).indices.values()
+    return elementary_sets
+
+
+# def partition_by_equal_array(universe: np.ndarray, attributes: list) -> list:
+#     """
+#     calculate the partition of universe on attributes
+#     :param universe: the universe of objects(feature vector/sample/instance)
+#     :param attributes: list, a set of features' index
+#     :return: list, each element is a list and represent the equivalence class
+#     """
+#     elementary_sets = []
+#     for i in range(len(universe)):
+#         flag = True
+#         for elementary_single_set in elementary_sets:
+#             # if is_indiscernible(universe, i, elementary_single_set[0], attributes):
+#             # if np.array_equiv(universe[i][attributes], universe[elementary_single_set[0]][attributes]):
+#             # array_equal和array_equiv都通过().all()实现
+#             if (universe[elementary_single_set[0], attributes] == universe[i, attributes]).all():
+#                 elementary_single_set.append(i)
+#                 flag = False
+#                 break
+#         if flag:
+#             elementary_sets.append([i])
+#     return elementary_sets
 
 
 # for discrete data
@@ -106,44 +139,29 @@ def part_partition(universe, samples, attributes, is_indiscernible=is_indiscerni
 #         如果 y 和 x为不可分辨关系
 #             将y加入到x的等价类中
 # 	    将y从样本集中移除
-def partition2(raw_universe, attributes, is_indiscernible=is_indiscernible_discrete):
-    """
-    Method 2 to calculate the partition of raw_universe on attributes
-    :param raw_universe: the universe of objects(feature vector/sample/instance)
-    :param attributes: features' index
-    :param is_indiscernible: to judge if the two feature vector is indiscernible
-    :return: list, each element is a list and represent the equivalence class
-    """
-    universe = list(np.arange(raw_universe.shape[0]))
-    elementary_sets = []  # R-elementary sets
-    i = 0
-    while i < len(universe):
-        IND_IS_R = [universe[i]]  # Equivalence class
-        j = i + 1
-        while j < len(universe):
-            if is_indiscernible(raw_universe, universe[i], universe[j], attributes):
-                IND_IS_R.append(universe[j])
-                universe.remove(universe[j])
-                j -= 1
-            j += 1
-        universe.remove(universe[i])
-        elementary_sets.append(IND_IS_R)
-    return elementary_sets
-
-
-def element_is_include(element, element_set):
-    """
-    judge if the element is included by(belong to) the my list 2
-    :param element: a object's index
-    :param element_set: list, a set of objects' index
-    :return: True/False
-    """
-    flag = True
-    try:
-        element_set.index(element)
-    except ValueError:
-        flag = False
-    return flag
+# def partition2(raw_universe, attributes, is_indiscernible=is_indiscernible_discrete):
+#     """
+#     Method 2 to calculate the partition of raw_universe on attributes
+#     :param raw_universe: the universe of objects(feature vector/sample/instance)
+#     :param attributes: features' index
+#     :param is_indiscernible: to judge if the two feature vector is indiscernible
+#     :return: list, each element is a list and represent the equivalence class
+#     """
+#     universe = list(np.arange(raw_universe.shape[0]))
+#     elementary_sets = []  # R-elementary sets
+#     i = 0
+#     while i < len(universe):
+#         IND_IS_R = [universe[i]]  # Equivalence class
+#         j = i + 1
+#         while j < len(universe):
+#             if is_indiscernible(raw_universe, universe[i], universe[j], attributes):
+#                 IND_IS_R.append(universe[j])
+#                 universe.remove(universe[j])
+#                 j -= 1
+#             j += 1
+#         universe.remove(universe[i])
+#         elementary_sets.append(IND_IS_R)
+#     return elementary_sets
 
 
 def set_is_include(set1, set2):
@@ -156,9 +174,9 @@ def set_is_include(set1, set2):
     for element in set2:
         flag = True
         for x1 in set1:
-            try:
-                element.index(x1)
-            except ValueError:
+            if x1 in element:
+                pass
+            else:
                 flag = False
                 break
         if flag:
@@ -297,6 +315,8 @@ def dependency(universe, attributes, labels):
     All values of attributes from D are uniquely determined by the values of attributes from C.),
     the dependency of features_1 to features_2, POS_features_1(features_2)
     """
+    if len(attributes) == 0:
+        return 0
     positive_region_size = len(positive_region_of_universe(universe, attributes, labels))
     dependency_degree = positive_region_size/len(universe)
     return dependency_degree
